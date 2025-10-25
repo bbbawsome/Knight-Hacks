@@ -124,7 +124,7 @@ export default function Home() {
       <div className="w-full max-w-2xl space-y-4">
         {/* Header Title */}
         <h1 className="text-2xl font-bold mb-4 text-center">
-          💬 AI@UCF Chatbot
+          💬 LARRY POOO
         </h1>
 
         {/* Display Messages */}
