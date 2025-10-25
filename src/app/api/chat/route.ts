@@ -26,7 +26,7 @@ export const POST = async (req: Request) => {
     const systemMessages = {
       role: "system",
       content:
-        "You are a helpful AI assistant. Keep responses concise and friendly",
+        "You are a helpful Financial AI assistant. Keep responses concise and friendly",
     };
     const chatMessages = [systemMessages, ...messages];
 
