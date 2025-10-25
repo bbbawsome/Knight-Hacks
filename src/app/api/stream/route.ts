@@ -35,36 +35,12 @@ export const POST = async (req: Request) => {
     const chatOutput = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: chatMessages,
-      stream: true,
+      stream: true, // Turn on stream param
     });
 
-    // Stream output using ReadableStream
-    const encoder = new TextEncoder(); // Create encorder to turn string into U8IntArray
-
-    const readableStream = new ReadableStream({
-      // Create readableStream object, which streams output to frontend
-
-      async start(controller) {
-        // Called when stream is created
-        // Keep retireving & enqueuing as chunks come in
-        for await (const chunk of chatOutput) {
-          const text = chunk.choices?.[0]?.delta?.content || "";
-          if (text) {
-            controller.enqueue(encoder.encode(text)); // Encode & Add response to controller
-          }
-        }
-
-        controller.close();
-      },
-    });
-
-    // Return readableStream - NextJS creates the stream
-    return new Response(readableStream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    /* !!!! ADD STREAMING LOGIC HERE !!!! */
   } catch (err) {
     console.error("Error Occurred:", err);
     return Response.json({ error: "Error Occured" }, { status: 500 });
   }
 };
-
