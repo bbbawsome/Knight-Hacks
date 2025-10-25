@@ -43,7 +43,20 @@ export default function Home() {
     setMessages(newMessages);
     setInput("");
 
-    /* !!!! ADD FETCH LOGIC HERE !!!! */
+    /* Completed Task: Add fetch and save assistant reply to messages */
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: newMessages }),
+    });
+
+    const data = await res.json();
+
+    const assistantMessage: Message = {
+      role: "assistant",
+      content: data.reply || "Error!!!",
+    };
+    setMessages([...newMessages, assistantMessage]);
 
     setLoading(false);
   };
@@ -57,9 +70,53 @@ export default function Home() {
     setMessages(newMessages);
     setInput("");
 
-    /* !!! ADD STREAM LOGIC HERE !!! */
+    /* Completed Challenge: Add frontend streaming logic to receive and decode stream */
+    try {
+      const response = await fetch("/api/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages }),
+      });
 
-    setLoading(false);
+      if (!response.body) {
+        throw new Error("Failed to receive stream");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantResponse = "";
+
+      // Add a placeholder for the chatbot's response
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        { role: "assistant", content: "" },
+      ]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        assistantResponse += chunk;
+
+        // Update the last message
+        setMessages((currentMessages) => {
+          const lastMessage = currentMessages[currentMessages.length - 1];
+          if (lastMessage.role === "assistant") {
+            return [
+              ...currentMessages.slice(0, -1),
+              { ...lastMessage, content: assistantResponse },
+            ];
+          } else {
+            return currentMessages;
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch response:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
