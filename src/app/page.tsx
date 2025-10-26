@@ -6,7 +6,7 @@
 */
 
 "use client";
-import { useState, MouseEvent } from "react";
+import { useState, useRef, useEffect, MouseEvent } from "react";
 
 // --- Types ---
 type Message = {
@@ -37,6 +37,13 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // --- Scroll to bottom when messages update ---
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // --- Suggested Questions ---
   const suggestedQuestions: string[] = [
@@ -81,6 +88,13 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages }),
       });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Server error response:", text);
+        throw new Error("Server error");
+      }
+
       const data = await res.json();
       const assistantMessage: Message = {
         role: "assistant",
@@ -89,6 +103,11 @@ export default function Home() {
       setMessages([...newMessages, assistantMessage]);
     } catch (error) {
       console.error("Error fetching chat:", error);
+      const errorMessage: Message = {
+        role: "assistant",
+        content: "Sorry, something went wrong. Please try again.",
+      };
+      setMessages([...newMessages, errorMessage]);
     } finally {
       setLoading(false);
     }
@@ -150,9 +169,7 @@ export default function Home() {
 
       {/* === Page Title === */}
       <div className="w-full text-center mb-6">
-        <h1 className="text-3xl font-bold text-white">
-          Virtual Financial Advisor
-        </h1>
+        <h1 className="text-3xl font-bold text-white">Virtual Financial Advisor</h1>
       </div>
 
       {/* === Main Flex Row: Chat + PlanCard === */}
@@ -177,6 +194,7 @@ export default function Home() {
                 </div>
               </div>
             ))}
+            <div ref={chatEndRef} />
             {loading && (
               <div className="flex justify-start">
                 <p className="text-gray-400 text-sm italic">Chatbot is thinking...</p>
