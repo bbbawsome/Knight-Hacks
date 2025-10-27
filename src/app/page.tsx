@@ -169,7 +169,7 @@ export default function Home() {
 
       {/* === Page Title === */}
       <div className="w-full text-center mb-6">
-        <h1 className="text-3xl font-bold text-white">Virtual Financial Advisor</h1>
+        <h1 className="text-3xl font-bold text-white"> Virtual Financial Advisor</h1>
       </div>
 
       {/* === Main Flex Row: Chat + PlanCard === */}

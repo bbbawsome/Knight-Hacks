@@ -4,12 +4,7 @@
  This file defines a POST API route for a streaming chat endpoint using the Groq SDK.
  It accepts an array of messages from the client, prepends a system message, and
  streams the assistant's response back to the frontend in real-time.
-  
- 🧩 What to do in this file:
- Write code inside the section below (marked with "!!!! ADD STREAMING LOGIC HERE !!!!") to 
- stream the Groq chat output to the frontend by reading chunks from `chatOutput`, encode 
- them, and enqueue into a ReadableStream.
- */
+*/
 
 import Groq from "groq-sdk";
 
@@ -17,30 +12,54 @@ const groq = new Groq();
 
 export const POST = async (req: Request) => {
   try {
-    // Get the message from HTTP request
+    // Get the messages from the HTTP request
     const { messages } = await req.json();
     if (!messages) {
-      return Response.json({ error: "Messages are Missing" }, { status: 400 });
+      return Response.json({ error: "Messages are missing" }, { status: 400 });
     }
 
-    // Create a System Message
-    const systemMessages = {
+    // Create a system message
+    const systemMessage = {
       role: "system",
       content:
         "You are a helpful AI assistant. Keep responses concise and friendly",
     };
-    const chatMessages = [systemMessages, ...messages];
+    const chatMessages = [systemMessage, ...messages];
 
-    // Get response from groq
+    // Request streaming response from Groq
     const chatOutput = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: chatMessages,
-      stream: true, // Turn on stream param
+      stream: true,
     });
 
-    /* !!!! ADD STREAMING LOGIC HERE !!!! */
+    // Encode text for streaming
+    const encoder = new TextEncoder();
+
+    // Create a ReadableStream to stream chunks to frontend
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of chatOutput) {
+            const text = chunk.choices?.[0]?.delta?.content || "";
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+          controller.close();
+        } catch (err) {
+          console.error("Error streaming chat:", err);
+          controller.error(err);
+        }
+      },
+    });
+
+    // Return the stream as plain text
+    return new Response(readableStream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   } catch (err) {
-    console.error("Error Occurred:", err);
-    return Response.json({ error: "Error Occured" }, { status: 500 });
+    console.error("Error occurred in POST /stream:", err);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-};
+}; // ← THIS CLOSING BRACE WAS MISSING
